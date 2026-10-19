@@ -1,11 +1,10 @@
-require('dotenv').config();
-const axios = require('axios');
-const express = require('express');
-const multer = require('multer');
-const pdfParse = require('pdf-parse');
-const fs = require('fs');
-const cors = require('cors');
-const { GoogleGenAI } = require('@google/genai');
+require("dotenv").config();
+const axios = require("axios");
+const express = require("express");
+const multer = require("multer");
+const pdfParse = require("pdf-parse");
+const cors = require("cors");
+const { GoogleGenAI } = require("@google/genai");
 
 const app = express();
 
@@ -16,35 +15,35 @@ const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
 
+// Keep uploads in memory: Vercel's filesystem is read-only
 const upload = multer({
-  dest: 'uploads/',
+  storage: multer.memoryStorage(),
 });
 
-app.get('/', (req, res) => {
-  res.send('AI Resume Analyzer Backend Running');
+app.get("/", (req, res) => {
+  res.send("AI Resume Analyzer Backend Running");
 });
 
-app.post('/analyze', upload.single('resume'), async (req, res) => {
-  console.log('\n===== ANALYZE ROUTE HIT =====');
+app.post("/analyze", upload.single("resume"), async (req, res) => {
+  console.log("\n===== ANALYZE ROUTE HIT =====");
 
   try {
     if (!req.file) {
       return res.status(400).json({
-        message: 'No file uploaded',
+        message: "No file uploaded",
       });
     }
 
-    console.log('File received:', req.file.originalname);
+    console.log("File received:", req.file.originalname);
 
-    const dataBuffer = fs.readFileSync(req.file.path);
+    const pdfData = await pdfParse(req.file.buffer);
 
-    const pdfData = await pdfParse(dataBuffer);
+    const resumeText = pdfData.text || "";
 
-    const resumeText = pdfData.text || '';
+    const jobDescription =
+      req.body.jobDescription || "";
 
-    const jobDescription = req.body.jobDescription || '';
-
-    console.log('PDF parsed successfully');
+    console.log("PDF parsed successfully");
 
     const prompt = `
 You are an expert ATS Resume Reviewer, Career Coach, and Technical Interview Mentor.
@@ -200,38 +199,38 @@ Job Description:
 ${jobDescription}
 `;
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: "gemini-2.5-flash",
       contents: prompt,
     });
 
     const responseText = response.text;
 
-    console.log('\n===== GEMINI RESPONSE =====');
+    console.log("\n===== GEMINI RESPONSE =====");
     console.log(responseText);
 
     const cleaned = responseText
-      .replace(/```json/g, '')
-      .replace(/```/g, '')
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
       .trim();
 
     let aiResult;
 
-  try {
-    aiResult = JSON.parse(cleaned);
-  } catch (err) {
-    console.error('Invalid JSON from Gemini:');
-    console.log(cleaned);
+try {
+  aiResult = JSON.parse(cleaned);
+} catch (err) {
+  console.error("Invalid JSON from Gemini:");
+  console.log(cleaned);
 
-    return res.status(500).json({
-      message: 'Gemini returned invalid JSON.',
-    });
-  }
+  return res.status(500).json({
+    message: "Gemini returned invalid JSON.",
+  });
+}
 
    aiResult.resumeAnalysis = aiResult.resumeAnalysis || {
   atsScore: 0,
   jobMatchScore: 0,
-  recommendedRole: '',
-  summary: '',
+  recommendedRole: "",
+  summary: "",
   suggestions: [],
 };
 
@@ -242,20 +241,20 @@ aiResult.skillGap = aiResult.skillGap || {
   strengths: [],
   weaknesses: [],
   highPrioritySkills: [],
-  recommendation: '',
+  recommendation: "",
 };
 
 aiResult.careerRoadmap = aiResult.careerRoadmap || {
-  duration: '30 Days',
+  duration: "30 Days",
   weeks: [],
   expectedATS: 0,
-  summary: '',
+  summary: "",
 };
 aiResult.linkedin = aiResult.linkedin || {
 
-  headline: '',
+  headline: "",
 
-  about: '',
+  about: "",
 
   skills: [],
 
@@ -272,7 +271,7 @@ aiResult.interviewQuestions =
     res.json(aiResult);
 
   } catch (error) {
-    console.error('\n===== ERROR OCCURRED =====');
+    console.error("\n===== ERROR OCCURRED =====");
     console.error(error);
 
     res.status(500).json({
@@ -280,14 +279,14 @@ aiResult.interviewQuestions =
     });
   }
 });
-app.post('/chat', async (req, res) => {
+app.post("/chat", async (req, res) => {
   try {
 
     const { message } = req.body;
 
     const response =
       await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: "gemini-2.5-flash",
         contents: `
 You are an AI Career Assistant.
 
@@ -313,17 +312,17 @@ ${message}
     console.error(error);
 
     res.status(500).json({
-      reply: 'Something went wrong',
+      reply: "Something went wrong",
     });
   }
 });
-app.post('/jobs', async (req, res) => {
+app.post("/jobs", async (req, res) => {
   try {
     const { role, location } = req.body;
 
-    console.log('===== JOB SEARCH =====');
-    console.log('Role:', role);
-    console.log('Location:', location);
+    console.log("===== JOB SEARCH =====");
+    console.log("Role:", role);
+    console.log("Location:", location);
 
     const response = await axios.post(
       `https://jooble.org/api/${process.env.JOOBLE_API_KEY}`,
@@ -333,32 +332,32 @@ app.post('/jobs', async (req, res) => {
       },
       {
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       }
     );
 
-    console.log('Jooble Response Received');
+    console.log("Jooble Response Received");
 
     const jobs = (response.data.jobs || []).map((job) => ({
-      title: job.title || 'N/A',
-      company: job.company || 'Unknown Company',
-      location: job.location || 'Not Specified',
-      salary: job.salary || 'Not Specified',
-      type: job.type || 'Not Specified',
+      title: job.title || "N/A",
+      company: job.company || "Unknown Company",
+      location: job.location || "Not Specified",
+      salary: job.salary || "Not Specified",
+      type: job.type || "Not Specified",
       applyLink: job.link,
     }));
-    console.log('Full Jooble Response:');
+    console.log("Full Jooble Response:");
 console.log(JSON.stringify(response.data, null, 2));
 
     res.json(jobs);
 
   } catch (err) {
-    console.error('===== JOOBLE ERROR =====');
+    console.error("===== JOOBLE ERROR =====");
     console.error(err.response?.data || err.message);
 
     res.status(500).json({
-      message: 'Unable to fetch jobs',
+      message: "Unable to fetch jobs",
     });
   }
 });
@@ -366,7 +365,7 @@ console.log(JSON.stringify(response.data, null, 2));
 // START MOCK INTERVIEW
 // =======================
 
-app.post('/interview/start', async (req, res) => {
+app.post("/interview/start", async (req, res) => {
   try {
 
     const { role, difficulty } = req.body;
@@ -398,15 +397,15 @@ Format:
 `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: "gemini-2.5-flash",
       contents: prompt,
     });
 
     const text = response.text;
 
     const cleaned = text
-      .replace(/```json/g, '')
-      .replace(/```/g, '')
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
       .trim();
 
     const questions = JSON.parse(cleaned);
@@ -418,10 +417,11 @@ Format:
     console.error(error);
 
     res.status(500).json({
-      message: 'Unable to generate interview',
+      message: "Unable to generate interview",
     });
 
   }
 });
+
 
 module.exports = app;
