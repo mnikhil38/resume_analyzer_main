@@ -29,7 +29,7 @@ function Jobs() {
       setError("");
       setJobs([]);
 
-      const response = await fetch("http://localhost:5000/jobs", {
+      const response = await fetch(import.meta.env.VITE_API_URL + "/jobs", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

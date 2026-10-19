@@ -3,7 +3,6 @@ const axios = require("axios");
 const express = require("express");
 const multer = require("multer");
 const pdfParse = require("pdf-parse");
-const fs = require("fs");
 const cors = require("cors");
 const { GoogleGenAI } = require("@google/genai");
 
@@ -16,8 +15,9 @@ const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
 
+// Keep uploads in memory: Vercel's filesystem is read-only
 const upload = multer({
-  dest: "uploads/",
+  storage: multer.memoryStorage(),
 });
 
 app.get("/", (req, res) => {
@@ -36,9 +36,7 @@ app.post("/analyze", upload.single("resume"), async (req, res) => {
 
     console.log("File received:", req.file.originalname);
 
-    const dataBuffer = fs.readFileSync(req.file.path);
-
-    const pdfData = await pdfParse(dataBuffer);
+    const pdfData = await pdfParse(req.file.buffer);
 
     const resumeText = pdfData.text || "";
 
@@ -425,6 +423,10 @@ Format:
   }
 });
 
-app.listen(5000, () => {
-  console.log("Server running on port 5000");
-});
+if (!process.env.VERCEL) {
+  app.listen(5000, () => {
+    console.log("Server running on port 5000");
+  });
+}
+
+module.exports = app;

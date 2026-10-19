@@ -73,7 +73,7 @@ export default function ResumeAnalyzer() {
       formData.append("jobDescription", jobDescription);
 
       const response = await fetch(
-        "https://resume-analyzer-w806.onrender.com/analyze",
+        `${import.meta.env.VITE_API_URL}/analyze`,
         {
           method: "POST",
           body: formData,
