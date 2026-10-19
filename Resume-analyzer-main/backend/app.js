@@ -6,6 +6,8 @@ const pdfParse = require("pdf-parse");
 const cors = require("cors");
 const { GoogleGenAI } = require("@google/genai");
 
+const GEMINI_MODEL = "gemini-3.8-flash";
+
 const app = express();
 
 app.use(cors());
@@ -199,7 +201,7 @@ Job Description:
 ${jobDescription}
 `;
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: GEMINI_MODEL,
       contents: prompt,
     });
 
@@ -286,7 +288,7 @@ app.post("/chat", async (req, res) => {
 
     const response =
       await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: GEMINI_MODEL,
         contents: `
 You are an AI Career Assistant.
 
@@ -397,7 +399,7 @@ Format:
 `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: GEMINI_MODEL,
       contents: prompt,
     });
 
